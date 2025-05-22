@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Flight and Hotel Booking</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap');
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    font-family: 'Poppins', sans-serif;
+    margin: 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #333;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+  #app {
+    background: #fff;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 900px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    background: #5a43d1;
+    color: white;
+    padding: 18px 30px;
+    font-weight: 700;
+    font-size: 24px;
+    text-align: center;
+  }
+  main {
+    padding: 30px;
+  }
+  .hidden {
+    display: none !important;
+  }
+  nav {
+    background: #f4f4f4;
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 24px;
+  }
+  nav button {
+    background: none;
+    border: none;
+    padding: 16px 20px;
+    font-weight: 500;
+    cursor: pointer;
+    font-size: 16px;
+    color: #555;
+    transition: all 0.3s;
+  }
+  nav button.active, nav button:hover {
+    color: #5a43d1;
+    border-bottom: 3px solid #5a43d1;
+    font-weight: 700;
+  }
+  form {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  input[type="text"], input[type="email"], input[type="password"], select, input[type="date"], input[type="number"] {
+    width: 100%;
+    padding: 10px 14px;
+    margin-bottom: 20px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 15px;
+    transition: 0.3s border-color;
+  }
+  input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus, select:focus, input[type="date"]:focus, input[type="number"]:focus {
+    outline: none;
+    border-color: #5a43d1;
+  }
+  button.primary {
+    background: #5a43d1;
+    color: white;
+    font-weight: 700;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 16px;
+    width: 100%;
+    transition: background-color 0.3s;
+  }
+  button.primary:hover {
+    background: #412a99;
+  }
+  .error {
+    color: #e03e3e;
+    font-size: 13px;
+    margin-top: -15px;
+    margin-bottom: 15px;
+  }
+  .success-message {
+    text-align: center;
+    font-weight: 600;
+    color: green;
+    margin-bottom: 15px;
+  }
+  .results {
+    margin-top: 30px;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .result-item {
+    background: #fafafa;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 8px rgba(90, 67, 209, 0.1);
+    transition: box-shadow 0.3s;
+  }
+  .result-item:hover {
+    box-shadow: 0 4px 16px rgba(90, 67, 209, 0.25);
+  }
+  .result-title {
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #4b3ca7;
+  }
+  .logout-btn {
+    background: transparent;
+    border: 2px solid #fff;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+    border-radius: 12px;
+    padding: 6px 14px;
+    position: absolute;
+    top: 18px;
+    right: 30px;
+    transition: background-color 0.3s, color 0.3s;
+  }
+  .logout-btn:hover {
+    background: white;
+    color: #5a43d1;
+  }
+  .top-bar {
+    position: relative;
+    background: #5a43d1;
+    color: white;
+    padding: 18px 30px;
+    font-weight: 700;
+    font-size: 20px;
+    text-align: center;
+  }
+  .welcome-msg {
+    font-weight: 500;
+    font-size: 16px;
+    margin-top: 4px;
+    color: #dcd4f7;
+  }
+  @media (max-width: 600px) {
+    main {
+      padding: 20px 15px;
+    }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>VistaLogic</header>
+
+  <!-- Login/Register views -->
+  <main id="auth-page">
+    <div id="login-form">
+      <h2>Login</h2>
+      <form id="form-login" novalidate>
+        <label for="login-email">Email</label>
+        <input type="email" id="login-email" required autocomplete="username" />
+        <div class="error" id="login-email-error"></div>
+
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" required autocomplete="current-password" />
+        <div class="error" id="login-password-error"></div>
+
+        <button type="submit" class="primary">Login</button>
+      </form>
+      <p style="margin-top: 15px; font-size: 14px;">Don't have an account? <a href="#" id="show-register">Register here</a></p>
+      <div class="error" id="login-error-msg"></div>
+    </div>
+
+    <div id="register-form" class="hidden">
+      <h2>Register</h2>
+      <form id="form-register" novalidate>
+        <label for="register-name">Full Name</label>
+        <input type="text" id="register-name" required autocomplete="name" />
+        <div class="error" id="register-name-error"></div>
+
+        <label for="register-email">Email</label>
+        <input type="email" id="register-email" required autocomplete="email" />
+        <div class="error" id="register-email-error"></div>
+
+        <label for="register-password">Password</label>
+        <input type="password" id="register-password" required autocomplete="new-password" />
+        <div class="error" id="register-password-error"></div>
+
+        <label for="register-password-confirm">Confirm Password</label>
+        <input type="password" id="register-password-confirm" required autocomplete="new-password" />
+        <div class="error" id="register-password-confirm-error"></div>
+
+        <button type="submit" class="primary">Register</button>
+      </form>
+      <p style="margin-top: 15px; font-size: 14px;">Already have an account? <a href="#" id="show-login">Login here</a></p>
+      <div class="error" id="register-error-msg"></div>
+    </div>
+  </main>
+
+  <!-- Booking views -->
+  <main id="booking-page" class="hidden">
+    <div class="top-bar">
+      Welcome, <span id="user-name"></span>!
+      <button class="logout-btn" id="logout-btn" title="Logout">Logout</button>
+    </div>
+    <nav>
+      <button class="active" id="tab-flights">Flights</button>
+      <button id="tab-hotels">Hotels</button>
+    </nav>
+    <section id="flights-section">
+      <form id="flight-search-form" novalidate>
+        <label for="flight-from">From</label>
+        <input type="text" id="flight-from" placeholder="City or Airport" required />
+
+        <label for="flight-to">To</label>
+        <input type="text" id="flight-to" placeholder="City or Airport" required />
+
+        <label for="flight-departure-date">Departure Date</label>
+        <input type="date" id="flight-departure-date" required min="" />
+
+        <label for="flight-return-date">Return Date (optional)</label>
+        <input type="date" id="flight-return-date" min="" />
+
+        <button type="submit" class="primary">Search Flights</button>
+      </form>
+      <div class="results" id="flight-results"></div>
+    </section>
+    <section id="hotels-section" class="hidden">
+      <form id="hotel-search-form" novalidate>
+        <label for="hotel-location">Location</label>
+        <input type="text" id="hotel-location" placeholder="City or Destination" required />
+
+        <label for="hotel-checkin-date">Check-in Date</label>
+        <input type="date" id="hotel-checkin-date" required min="" />
+
+        <label for="hotel-checkout-date">Check-out Date</label>
+        <input type="date" id="hotel-checkout-date" required min="" />
+
+        <label for="hotel-guests">Number of Guests</label>
+        <input type="number" id="hotel-guests" min="1" max="10" required value="1" />
+
+        <button type="submit" class="primary">Search Hotels</button>
+      </form>
+      <div class="results" id="hotel-results"></div>
+    </section>
+  </main>
+</div>
+
+<script>
+  // Helper: format date to YYYY-MM-DD
+  function formatDate(date) {
+    return date.toISOString().split('T')[0];
+  }
+
+  // Initialize min date attributes to today for date inputs
+  function setMinDates() {
+    const todayStr = formatDate(new Date());
+    document.getElementById('flight-departure-date').setAttribute('min', todayStr);
+    document.getElementById('flight-return-date').setAttribute('min', todayStr);
+    document.getElementById('hotel-checkin-date').setAttribute('min', todayStr);
+    document.getElementById('hotel-checkout-date').setAttribute('min', todayStr);
+  }
+
+  setMinDates();
+
+  // Auth elements
+  const loginFormEl = document.getElementById('login-form');
+  const registerFormEl = document.getElementById('register-form');
+  const authPage = document.getElementById('auth-page');
+  const bookingPage = document.getElementById('booking-page');
+
+  // Show register form link/button
+  document.getElementById('show-register').addEventListener('click', (e) => {
+    e.preventDefault();
+    loginFormEl.classList.add('hidden');
+    registerFormEl.classList.remove('hidden');
+    clearAuthErrors();
+  });
+  // Show login form link/button
+  document.getElementById('show-login').addEventListener('click', (e) => {
+    e.preventDefault();
+    registerFormEl.classList.add('hidden');
+    loginFormEl.classList.remove('hidden');
+    clearAuthErrors();
+  });
+
+  // Clear all auth errors
+  function clearAuthErrors() {
+    document.querySelectorAll('#auth-page .error').forEach(el => el.textContent = '');
+  }
+
+  // Store and retrieve users from localStorage
+  function getUsers() {
+    const users = localStorage.getItem('users');
+    if (users) {
+      return JSON.parse(users);
+    }
+    return {};
+  }
+  function saveUsers(users) {
+    localStorage.setItem('users', JSON.stringify(users));
+  }
+
+  // Save logged in user email in sessionStorage to simulate session
+  function setLoggedInUser(email) {
+    sessionStorage.setItem('loggedInUser', email);
+  }
+  function getLoggedInUser() {
+    return sessionStorage.getItem('loggedInUser');
+  }
+  function logout() {
+    sessionStorage.removeItem('loggedInUser');
+  }
+
+  // Validate email format basic
+  function validateEmail(email) {
+    const re = /\S+@\S+\.\S+/;
+    return re.test(email);
+  }
+
+  // Registration form submit
+  const registerForm = document.getElementById('form-register');
+  registerForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    clearAuthErrors();
+    const name = document.getElementById('register-name').value.trim();
+    const email = document.getElementById('register-email').value.trim().toLowerCase();
+    const password = document.getElementById('register-password').value;
+    const confirmPassword = document.getElementById('register-password-confirm').value;
+    let valid = true;
+
+    if (name.length < 2) {
+      document.getElementById('register-name-error').textContent = 'Please enter your full name';
+      valid = false;
+    }
+    if (!validateEmail(email)) {
+      document.getElementById('register-email-error').textContent = 'Please enter a valid email';
+      valid = false;
+    }
+    if (password.length < 6) {
+      document.getElementById('register-password-error').textContent = 'Password must be at least 6 characters';
+      valid = false;
+    }
+    if (password !== confirmPassword) {
+      document.getElementById('register-password-confirm-error').textContent = 'Passwords do not match';
+      valid = false;
+    }
+
+    if (!valid) return;
+
+    const users = getUsers();
+    if (users[email]) {
+      document.getElementById('register-error-msg').textContent = 'An account with this email already exists';
+      return;
+    }
+    users[email] = { name, email, password };
+    saveUsers(users);
+    alert('Registration successful! You can now log in.');
+    registerForm.reset();
+    registerFormEl.classList.add('hidden');
+    loginFormEl.classList.remove('hidden');
+  });
+
+  // Login form submit
+  const loginForm = document.getElementById('form-login');
+  loginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    clearAuthErrors();
+    const email = document.getElementById('login-email').value.trim().toLowerCase();
+    const password = document.getElementById('login-password').value;
+    let valid = true;
+    if (!validateEmail(email)) {
+      document.getElementById('login-email-error').textContent = 'Please enter a valid email';
+      valid = false;
+    }
+    if (!password) {
+      document.getElementById('login-password-error').textContent = 'Please enter password';
+      valid = false;
+    }
+    if (!valid) return;
+
+    const users = getUsers();
+    if (!users[email] || users[email].password !== password) {
+      document.getElementById('login-error-msg').textContent = 'Invalid email or password';
+      return;
+    }
+    setLoggedInUser(email);
+    loginForm.reset();
+    showBookingPage();
+  });
+
+  // Show booking page with user info, hide auth
+  const userNameEl = document.getElementById('user-name');
+  function showBookingPage() {
+    const email = getLoggedInUser();
+    if (!email) {
+      showAuthPage();
+      return;
+    }
+    const users = getUsers();
+    if (!users[email]) {
+      showAuthPage();
+      return;
+    }
+    userNameEl.textContent = users[email].name;
+    authPage.classList.add('hidden');
+    bookingPage.classList.remove('hidden');
+  }
+
+  function showAuthPage() {
+    authPage.classList.remove('hidden');
+    bookingPage.classList.add('hidden');
+  }
+
+  // Logout button
+  document.getElementById('logout-btn').addEventListener('click', () => {
+    logout();
+    showAuthPage();
+  });
+
+  // On load, check session
+  if (getLoggedInUser()) {
+    showBookingPage();
+  }
+
+  // Booking tabs
+  const tabFlightsBtn = document.getElementById('tab-flights');
+  const tabHotelsBtn = document.getElementById('tab-hotels');
+  const flightsSection = document.getElementById('flights-section');
+  const hotelsSection = document.getElementById('hotels-section');
+
+  tabFlightsBtn.addEventListener('click', () => {
+    tabFlightsBtn.classList.add('active');
+    tabHotelsBtn.classList.remove('active');
+    flightsSection.classList.remove('hidden');
+    hotelsSection.classList.add('hidden');
+    clearResults();
+  });
+
+  tabHotelsBtn.addEventListener('click', () => {
+    tabHotelsBtn.classList.add('active');
+    tabFlightsBtn.classList.remove('active');
+    hotelsSection.classList.remove('hidden');
+    flightsSection.classList.add('hidden');
+    clearResults();
+  });
+
+  function clearResults() {
+    document.getElementById('flight-results').innerHTML = '';
+    document.getElementById('hotel-results').innerHTML = '';
+  }
+
+  // Flight search form validation and mock results
+  const flightSearchForm = document.getElementById('flight-search-form');
+  flightSearchForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    clearResults();
+    const from = document.getElementById('flight-from').value.trim();
+    const to = document.getElementById('flight-to').value.trim();
+    const departureDate = document.getElementById('flight-departure-date').value;
+    const returnDate = document.getElementById('flight-return-date').value;
+
+    if (!from || !to || !departureDate) {
+      alert('Please fill in all required fields for flight search.');
+      return;
+    }
+    if (returnDate && returnDate < departureDate) {
+      alert('Return date cannot be before departure date.');
+      return;
+    }
+
+    // Mock flight results generation
+    const resultsEl = document.getElementById('flight-results');
+    const flights = generateMockFlights(from, to, departureDate, returnDate);
+    if (!flights.length) {
+      resultsEl.innerHTML = '<p>No flights found for your search.</p>';
+      return;
+    }
+    flights.forEach(flight => {
+      const div = document.createElement('div');
+      div.classList.add('result-item');
+      div.innerHTML = `
+        <div class="result-title">${flight.airline} - ${flight.flightNumber}</div>
+        <div>From: ${flight.from} | To: ${flight.to}</div>
+        <div>Departure: ${flight.departureDate} | Return: ${flight.returnDate || 'N/A'}</div>
+        <div>Price: $${flight.price}</div>
+        <button class="primary" onclick="alert('Flight booked successfully!')">Book Now</button>
+      `;
+      resultsEl.appendChild(div);
+    });
+  });
+
+  // Hotel search form validation and mock results
+  const hotelSearchForm = document.getElementById('hotel-search-form');
+  hotelSearchForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    clearResults();
+    const location = document.getElementById('hotel-location').value.trim();
+    const checkin = document.getElementById('hotel-checkin-date').value;
+    const checkout = document.getElementById('hotel-checkout-date').value;
+    const guests = parseInt(document.getElementById('hotel-guests').value, 10);
+
+    if (!location || !checkin || !checkout || !guests) {
+      alert('Please fill in all required fields for hotel search.');
+      return;
+    }
+    if (checkout <= checkin) {
+      alert('Check-out date must be after check-in date.');
+      return;
+    }
+
+    // Mock hotel results generation
+    const resultsEl = document.getElementById('hotel-results');
+    const hotels = generateMockHotels(location, checkin, checkout, guests);
+    if (!hotels.length) {
+      resultsEl.innerHTML = '<p>No hotels found for your search.</p>';
+      return;
+    }
+    hotels.forEach(hotel => {
+      const div = document.createElement('div');
+      div.classList.add('result-item');
+      div.innerHTML = `
+        <div class="result-title">${hotel.name}</div>
+        <div>Location: ${hotel.location}</div>
+        <div>Available rooms: ${hotel.availableRooms}</div>
+        <div>Price per night: $${hotel.pricePerNight}</div>
+        <button class="primary" onclick="alert('Hotel booked successfully!')">Book Now</button>
+      `;
+      resultsEl.appendChild(div);
+    });
+  });
+
+  // Mock flight data generator
+  function generateMockFlights(from, to, departureDate, returnDate) {
+    const airlines = ['SkyJet', 'CloudAir', 'FlyFast', 'AeroMax'];
+    let flights = [];
+    for (let i = 1; i <= 5; i++) {
+      flights.push({
+        airline: airlines[Math.floor(Math.random() * airlines.length)],
+        flightNumber: `SK${Math.floor(100 + Math.random() * 900)}`,
+        from,
+        to,
+        departureDate,
+        returnDate: returnDate || null,
+        price: (100 + Math.floor(Math.random() * 400))
+      });
+    }
+    return flights;
+  }
+
+  // Mock hotel data generator
+  function generateMockHotels(location, checkin, checkout, guests) {
+    const hotelNames = [
+      "Grand Palace Hotel",
+      "Cityscape Inn",
+      "Oceanview Suites",
+      "Mountain Lodge",
+      "Sunset Resort"
+    ];
+    let hotels = [];
+    for (let i = 0; i < 5; i++) {
+      hotels.push({
+        name: hotelNames[i],
+        location,
+        availableRooms: Math.floor(1 + Math.random() * 5),
+        pricePerNight: 50 + Math.floor(Math.random() * 150)
+      });
+    }
+    return hotels;
+  }
+</script>
+</body>
+</html>
+
