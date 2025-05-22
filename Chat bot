@@ -1,1 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Flight & Hotel Booking Chatbot</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+  body {
+    margin: 0;
+    background: linear-gradient(135deg, #5ee7df 0%, #b490ca 100%);
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  #chatbot-container {
+    background: #fff;
+    width: 420px;
+    max-width: 95vw;
+    height: 600px;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  #chat-header {
+    background: #7b68ee;
+    color: white;
+    padding: 18px 26px;
+    font-weight: 600;
+    font-size: 1.3rem;
+    letter-spacing: 0.05em;
+    user-select: none;
+  }
+  #chat-messages {
+    flex-grow: 1;
+    padding: 20px 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    background: #f8f8ff;
+  }
+  .message {
+    max-width: 78%;
+    padding: 12px 18px;
+    border-radius: 20px;
+    font-size: 0.95rem;
+    line-height: 1.3;
+    user-select: text;
+    box-shadow: 0 2px 6px rgb(0 0 0 / 0.05);
+    animation: fadeIn 0.3s ease forwards;
+  }
+  .bot-message {
+    background: #ece9ff;
+    color: #3c366b;
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+  }
+  .user-message {
+    background: #7b68ee;
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+  }
+  #input-area {
+    display: flex;
+    padding: 14px 24px;
+    background: #f0f0ff;
+  }
+  #user-input {
+    flex-grow: 1;
+    font-size: 1rem;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 24px;
+    outline: none;
+    box-shadow: inset 0 2px 5px rgb(0 0 0 / 0.1);
+    transition: box-shadow 0.3s ease;
+  }
+  #user-input:focus {
+    box-shadow: inset 0 2px 8px #7b68ee;
+  }
+  #send-btn {
+    margin-left: 12px;
+    background: #7b68ee;
+    border: none;
+    color: white;
+    font-weight: 600;
+    font-size: 1rem;
+    border-radius: 24px;
+    padding: 0 18px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(123,104,238,0.6);
+    transition: background 0.3s ease;
+  }
+  #send-btn:hover:not(:disabled) {
+    background: #5a42d6;
+  }
+  #send-btn:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
+  @keyframes fadeIn {
+    from {opacity: 0;}
+    to {opacity:1;}
+  }
+  /* Scrollbar styling */
+  #chat-messages::-webkit-scrollbar {
+    width: 8px;
+  }
+  #chat-messages::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  #chat-messages::-webkit-scrollbar-thumb {
+    background: rgba(123,104,238,0.4);
+    border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+  <div id="chatbot-container" role="main" aria-label="Flight and Hotel booking chatbot">
+    <header id="chat-header">Travel Booking Bot ✈️🏨</header>
+    <section id="chat-messages" aria-live="polite" aria-atomic="false"></section>
+    <form id="input-area" aria-label="Chat input form">
+      <input type="text" aria-label="Type your message here" id="user-input" autocomplete="off" placeholder="Type your message..." required />
+      <button type="submit" id="send-btn" aria-label="Send message">Send</button>
+    </form>
+  </div>
+
+<script>
+  const chatMessages = document.getElementById('chat-messages');
+  const userInput = document.getElementById('user-input');
+  const sendBtn = document.getElementById('send-btn');
+
+  // State variables to track conversation flow
+  let state = {
+    step: 'greeting', // current step in conversation flow
+    bookingType: null, // 'flight' or 'hotel'
+    details: {}, // collected booking info
+  };
+
+  // Helper to add messages to chat area
+  function addMessage(text, sender='bot') {
+    const msgEl = document.createElement('div');
+    msgEl.classList.add('message', sender === 'bot' ? 'bot-message' : 'user-message');
+    msgEl.textContent = text;
+    chatMessages.appendChild(msgEl);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  // Function to reset the booking state (after completion)
+  function resetState() {
+    state = {
+      step: 'greeting',
+      bookingType: null,
+      details: {}
+    };
+  }
+
+  // Date validation helper (YYYY-MM-DD) and check logical order
+  function isValidDate(dateStr) {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return false;
+    return dateStr === date.toISOString().slice(0,10);
+  }
+  function isFutureOrToday(dateStr) {
+    const now = new Date();
+    const date = new Date(dateStr + 'T00:00:00');
+    return date >= new Date(now.toISOString().slice(0,10) + 'T00:00:00');
+  }
+
+  // Main bot response handler logic based on the current step and input
+  function handleUserInput(input) {
+    input = input.trim();
+    if (!input) return;
+
+    addMessage(input, 'user');
+
+    if(state.step === 'greeting') {
+      // Ask user what they want to book
+      const lowerInput = input.toLowerCase();
+      if(lowerInput.includes('flight')) {
+        state.bookingType = 'flight';
+        state.step = 'flight_destination';
+        addMessage("Great! Let's book a flight. Where would you like to fly to? (Please enter city or airport)");
+      } else if(lowerInput.includes('hotel')) {
+        state.bookingType = 'hotel';
+        state.step = 'hotel_destination';
+        addMessage("Awesome! Let's book a hotel. Which city do you want to stay in?");
+      } else {
+        addMessage("I can help you book flights or hotels. Please type 'flight' to book a flight or 'hotel' to book a hotel.");
+      }
+      return;
+    }
+
+    // Flight booking flow
+    if(state.bookingType === 'flight') {
+      switch(state.step) {
+        case 'flight_destination':
+          if(input.length < 2) {
+            addMessage("Please enter a valid city or airport name.");
+            return;
+          }
+          state.details.destination = input;
+          state.step = 'flight_departure_date';
+          addMessage(`When would you like to depart to ${input}? Please enter the date in YYYY-MM-DD format.`);
+          break;
+        case 'flight_departure_date':
+          if(!isValidDate(input) || !isFutureOrToday(input)) {
+            addMessage("Please enter a valid departure date in YYYY-MM-DD format (today or a future date).");
+            return;
+          }
+          state.details.departureDate = input;
+          state.step = 'flight_return_date';
+          addMessage("When is your return date? Please enter in YYYY-MM-DD format. If one-way, type 'one-way' or leave blank.");
+          break;
+        case 'flight_return_date':
+          if(input.toLowerCase() === 'one-way' || input.trim() === '') {
+            state.details.returnDate = null;
+            state.step = 'flight_passenger_count';
+            addMessage("How many passengers will be traveling?");
+            return;
+          }
+          if(!isValidDate(input) || !isFutureOrToday(input)) {
+            addMessage("Please enter a valid return date in YYYY-MM-DD format (today or a future date), or type 'one-way' if you don't want a return flight.");
+            return;
+          }
+          if(input < state.details.departureDate) {
+            addMessage("Return date cannot be before departure date. Please enter a valid return date.");
+            return;
+          }
+          state.details.returnDate = input;
+          state.step = 'flight_passenger_count';
+          addMessage("How many passengers will be traveling?");
+          break;
+        case 'flight_passenger_count':
+          const pax = parseInt(input);
+          if(isNaN(pax) || pax < 1 || pax > 20) {
+            addMessage("Please enter a valid number of passengers (1-20).");
+            return;
+          }
+          state.details.passengers = pax;
+          state.step = 'flight_confirmation';
+          // Show summary for confirmation
+          const retTxt = state.details.returnDate ? state.details.returnDate : 'One-way';
+          addMessage(`Please confirm your flight booking details:
+Destination: ${state.details.destination}
+Departure: ${state.details.departureDate}
+Return: ${retTxt}
+Passengers: ${state.details.passengers}
+
+Type 'yes' to confirm or 'no' to cancel.`);
+          break;
+        case 'flight_confirmation':
+          if(input.toLowerCase() === 'yes') {
+            addMessage("Thank you! Your flight booking has been confirmed. A confirmation email will be sent shortly. ✈️");
+            resetState();
+          } else if(input.toLowerCase() === 'no') {
+            addMessage("Booking cancelled. If you'd like to start over, please tell me if you want to book a flight or a hotel.");
+            resetState();
+          } else {
+            addMessage("Please type 'yes' to confirm or 'no' to cancel the booking.");
+          }
+          break;
+      }
+      return;
+    }
+
+    // Hotel booking flow
+    if(state.bookingType === 'hotel') {
+      switch(state.step) {
+        case 'hotel_destination':
+          if(input.length < 2) {
+            addMessage("Please enter a valid city name.");
+            return;
+          }
+          state.details.city = input;
+          state.step = 'hotel_checkin_date';
+          addMessage(`When would you like to check in at hotels in ${input}? Please enter the date in YYYY-MM-DD format.`);
+          break;
+        case 'hotel_checkin_date':
+          if(!isValidDate(input) || !isFutureOrToday(input)) {
+            addMessage("Please enter a valid check-in date in YYYY-MM-DD format (today or future).");
+            return;
+          }
+          state.details.checkinDate = input;
+          state.step = 'hotel_checkout_date';
+          addMessage("When is your check-out date? Please enter in YYYY-MM-DD format.");
+          break;
+        case 'hotel_checkout_date':
+          if(!isValidDate(input) || !isFutureOrToday(input)) {
+            addMessage("Please enter a valid check-out date in YYYY-MM-DD format (today or future).");
+            return;
+          }
+          if(input <= state.details.checkinDate) {
+            addMessage("Check-out date must be after check-in date. Please enter a valid date.");
+            return;
+          }
+          state.details.checkoutDate = input;
+          state.step = 'hotel_room_count';
+          addMessage("How many rooms would you like to book?");
+          break;
+        case 'hotel_room_count':
+          const rooms = parseInt(input);
+          if(isNaN(rooms) || rooms < 1 || rooms > 10) {
+            addMessage("Please enter a valid number of rooms (1-10).");
+            return;
+          }
+          state.details.rooms = rooms;
+          state.step = 'hotel_guest_count';
+          addMessage("How many guests will be staying?");
+          break;
+        case 'hotel_guest_count':
+          const guests = parseInt(input);
+          if(isNaN(guests) || guests < 1 || guests > 50) {
+            addMessage("Please enter a valid number of guests (1-50).");
+            return;
+          }
+          state.details.guests = guests;
+          state.step = 'hotel_confirmation';
+          // Show summary for confirmation
+          addMessage(`Please confirm your hotel booking details:
+City: ${state.details.city}
+Check-in: ${state.details.checkinDate}
+Check-out: ${state.details.checkoutDate}
+Rooms: ${state.details.rooms}
+Guests: ${state.details.guests}
+
+Type 'yes' to confirm or 'no' to cancel.`);
+          break;
+        case 'hotel_confirmation':
+          if(input.toLowerCase() === 'yes') {
+            addMessage("Thank you! Your hotel booking has been confirmed. A confirmation email will be sent shortly. 🏨");
+            resetState();
+          } else if(input.toLowerCase() === 'no') {
+            addMessage("Booking cancelled. If you'd like to start over, please tell me if you want to book a flight or a hotel.");
+            resetState();
+          } else {
+            addMessage("Please type 'yes' to confirm or 'no' to cancel the booking.");
+          }
+          break;
+      }
+      return;
+    }
+  }
+
+  // Initial greeting message from bot
+  function startChat() {
+    addMessage("Hello! I'm your travel booking assistant. Would you like to book a flight or a hotel?");
+  }
+
+  // Event handlers
+  document.getElementById('input-area').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const input = userInput.value;
+    if(input.trim()){
+      handleUserInput(input);
+      userInput.value = '';
+    }
+  });
+
+  // Start chat interaction
+  startChat();
+</script>
+</body>
+</html>
 
